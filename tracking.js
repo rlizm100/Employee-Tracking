@@ -176,9 +176,63 @@ function addEmployee() {
 }
 
 function view() {
-  connection.query("SELECT employee.first_name, employee.last_name, employee.role_id, employee.manager_id FROM employee INNER JOIN department ON employee.id=department.id;", function(err, res) {
+  connection.query("SELECT employee.first_name, employee.last_name, role.title, role.salary, department.name FROM employee INNER JOIN role ON employee.role_id=role.id INNER JOIN department ON role.department_id=department.id;", function(err, res) {
     if (err) throw err;
-    console.log(res);
+    for (var i = 0; i < res.length; i++) {
+      console.log("Name: " + res[i].first_name + " " + res[i].last_name + " || Title: " + res[i].title + " || Department: " + res[i].name + " || Salary: " + res[i].salary);
+    }
     runTracking();
+  });
+}
+
+function update() {
+  // query the database for all employees
+  connection.query("SELECT * FROM employee", function(err, results) {
+    if (err) throw err;
+    inquirer
+      .prompt([
+        {
+          name: "choice",
+          type: "rawlist",
+          choices: function() {
+            var choiceArray = [];
+            for (var i = 0; i < results.length; i++) {
+              choiceArray.push(results[i].first_name + " " + results[i].last_name);
+            }
+            return choiceArray;
+          },
+          message: "What employee would you like to update?"
+        },
+        {
+          name: "role",
+          type: "input",
+          message: "What is the new role ID?"
+        }
+      ])
+      .then(function(answer) {
+        var chosenName;
+        for (var i = 0; i < results.length; i++) {
+          if (results[i].first_name + " " + results[i].last_name === answer.choice) {
+            chosenName = results[i];
+          }
+        }
+          connection.query(
+            "UPDATE employee SET ? WHERE ?",
+            [
+              {
+                role_id: answer.role
+              },
+              {
+                id: chosenName.id
+              }
+            ],
+            function(error) {
+              if (error) throw err;
+              console.log("Employee updated successfully!");
+              runTracking();
+            }
+          );
+        
+      });
   });
 }
